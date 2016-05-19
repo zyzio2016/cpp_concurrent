@@ -8,8 +8,8 @@ namespace zyzio {
 
         class fixed_thread_pool : public internal_executor_service {
         public:
-            typedef ::std::queue< task_wrapper> tasks_queue;
-            typedef ::std::vector< ::std::thread> thread_list;
+            typedef std::queue< std::function< void()> > tasks_queue;
+            typedef std::vector< std::thread> thread_list;
 
         protected:
             // the thread list
@@ -17,14 +17,14 @@ namespace zyzio {
             // the task queue - FILO
             tasks_queue tasks;
             // synchronization for queue task
-            ::std::mutex queue_mutex;
+            std::mutex queue_mutex;
             volatile bool stop;
-            ::std::condition_variable condition;
+            std::condition_variable condition;
 
         public:
             fixed_thread_pool(size_t nThreads);
             ~fixed_thread_pool();
-            void addToQueue(runnable& command, bool deleteAfter);
+            void addToQueue(std::function<void()>);
             void shutdown();
             bool isShutdown();
 

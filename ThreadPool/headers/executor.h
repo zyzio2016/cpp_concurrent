@@ -20,7 +20,7 @@ namespace zyzio {
         //functional interface for any executor
         class executor {
         public:
-            virtual void execute(runnable& command, bool deleteAfter = false) = 0;
+            virtual void execute(runnable& command) = 0;
         };
 
     }

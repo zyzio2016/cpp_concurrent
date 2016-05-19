@@ -9,6 +9,9 @@ namespace zyzio {
                 return new executor_service(new fixed_thread_pool(nThreads));
             }
 
+            executor_service* newSingleThreadExecutor() {
+                return new executor_service(new fixed_thread_pool(1));
+            }
         }
     }
 }

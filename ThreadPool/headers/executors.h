@@ -7,6 +7,7 @@ namespace zyzio {
     namespace concurrent {
         namespace executors {
             executor_service* newFixedThreadPool(int nThreads);
+            executor_service* newSingleThreadExecutor();
         }
     }
 }

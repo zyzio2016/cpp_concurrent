@@ -4,6 +4,7 @@
 #include <chrono>
 #include <future>
 #include <memory>
+#include <functional>
 #include "executor.h"
 
 namespace zyzio {
@@ -18,7 +19,7 @@ namespace zyzio {
             };
             
             virtual ~internal_executor_service() {}
-            virtual void addToQueue(runnable& command, bool deleteAfter) = 0;
+            virtual void addToQueue(std::function<void()> f) = 0;
             virtual void shutdown() = 0;
             virtual bool isShutdown() = 0;
         };
@@ -32,7 +33,25 @@ namespace zyzio {
 
             virtual ~executor_service() {}
 
-            void execute(runnable& command, bool deleteAfter = false);
+            void execute(runnable& command);
+            void execute(std::function<void()> f);
+
+            ////Submits a value - returning task for execution and returns a Future representing the pending results of the task.
+            //template<class T, class callable>
+            //std::future< T> submit(callable task);
+
+            ////Submits a Runnable task for execution and returns a Future representing that task.
+            //template<class runnable>
+            //std::future< void> submit(runnable task);
+            template<class F, class... Args>
+            ////Submits a task for execution and returns a Future representing that task.
+            //template<class runnable>
+            auto submit(F f, Args&&... args)
+                ->std::future<typename std::result_of<F(Args...)>::type>;
+
+            ////Submits a Runnable task for execution and returns a Future representing that task.
+            //template<class T, class runnable>
+            //std::future< T> submitRunnable(runnable task, T result);
 
             //Blocks until all tasks have completed execution after a shutdown request, or the timeout occurs, 
             //or the current thread is interrupted, whichever happens first.
@@ -56,20 +75,32 @@ namespace zyzio {
 
             ////Initiates an orderly shutdown in which previously submitted tasks are executed, but no new tasks will be accepted.
             void shutdown();
-
-
-            ////Submits a value - returning task for execution and returns a Future representing the pending results of the task.
-            //template<class T, class callable>
-            //std::future< T> submit(callable task);
-
-            ////Submits a Runnable task for execution and returns a Future representing that task.
-            //template<class runnable>
-            //std::future< void> submit(runnable task);
-
-            ////Submits a Runnable task for execution and returns a Future representing that task.
-            //template<class T, class runnable>
-            //std::future< T> submitRunnable(runnable task, T result);
         };
+
+        class RunnableWrapper : public runnable {
+        public:
+            typedef std::function< void()> caller_type;
+        private:
+            caller_type fnct;
+        public:
+            RunnableWrapper(caller_type caller) {
+                fnct = move(caller);
+            }
+
+            void run() {
+                fnct();
+            }
+        };
+
+        template<class F, class... Args>
+        auto executor_service::submit(F f, Args&&... args)
+            ->std::future<typename std::result_of<F(Args...)>::type> {
+
+            using return_type = typename std::result_of<F(Args...)>::type;
+            auto task = std::make_shared< std::packaged_task< return_type()> >(std::bind(std::forward< F>(f), std::forward< Args>(args)...));
+            impl->addToQueue([task]() { (*task)(); });
+            return task->get_future();
+        }
     }
 }
 #endif

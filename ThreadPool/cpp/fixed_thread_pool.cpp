@@ -6,36 +6,22 @@ using namespace std;
 namespace zyzio {
     namespace concurrent {
 
-        class DeleteWrapper {
-        public:
-            static void deleteRunner(internal_executor_service::task_wrapper& wrapper) {
-                if (wrapper.deleteAfter && wrapper.task != nullptr) {
-                    delete wrapper.task;
-                    wrapper.task = nullptr;
-                }
-            }
-            void operator() (internal_executor_service::task_wrapper* wrapper) {
-                deleteRunner(*wrapper);
-                delete wrapper;
-            }
-        };
-
         fixed_thread_pool::fixed_thread_pool(size_t nThreads) : stop(false) {
             for (size_t i = 0; i < nThreads; ++i)
                 workers.emplace_back([this] {
                 for (;;) {
                     try {
-                        unique_ptr< task_wrapper, DeleteWrapper> wrapper(new task_wrapper());
+                        function<void()> task;
                         {
                             unique_lock< mutex> lock(this->queue_mutex);
                             this->condition.wait(lock,
                                 [this] { return this->stop || !this->tasks.empty(); });
                             if (this->stop && this->tasks.empty())
                                 return;
-                            *wrapper.get() = move(this->tasks.front());
+                            task = move(this->tasks.front());
                             this->tasks.pop();
                         }
-                        wrapper->task->run();
+                        task();
                     } catch (exception& e) {
                         cerr << e.what() << endl;
                     } catch (...) {
@@ -52,12 +38,9 @@ namespace zyzio {
                 worker.join();
         }
 
-        void fixed_thread_pool::addToQueue(runnable& command, bool deleteAfter) {
+        void fixed_thread_pool::addToQueue(function<void()> f) {
             unique_lock<mutex> lock(queue_mutex);
-            tasks.push(task_wrapper());
-            tasks_queue::reference task = tasks.back();
-            task.task = &command;
-            task.deleteAfter = deleteAfter;
+            tasks.push(f);
             condition.notify_one();
         }
 
@@ -66,7 +49,6 @@ namespace zyzio {
                 unique_lock< mutex> lock(queue_mutex);
                 stop = true;
                 while (!tasks.empty()) {
-                    DeleteWrapper::deleteRunner(tasks.front());
                     tasks.pop();
                 }
             }
