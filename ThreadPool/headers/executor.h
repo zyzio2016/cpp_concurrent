@@ -5,21 +5,24 @@
 
 namespace zyzio {
     namespace concurrent {
-        //functional interface for any runner
+
         class runnable {
         public:
+            virtual ~runnable() {}
             virtual void run() = 0;
         };
 
-        template<class R>
+        template<class T>
         class callable {
         public:
-            virtual R call() = 0;
+            virtual ~callable() {}
+            virtual T call() = 0;
         };
 
-        //functional interface for any executor
+        ///functional interface for any executor
         class executor {
         public:
+            virtual ~executor() {}
             virtual void execute(runnable& command) = 0;
         };
 

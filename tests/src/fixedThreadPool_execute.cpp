@@ -5,9 +5,20 @@
 using namespace std;
 using namespace zyzio::concurrent;
 
+class DestructorCounter : public  zyzio::concurrent::runnable {
+public:
+    static std::atomic_uint counter;
+    ~DestructorCounter() {
+        counter++;
+    }
+    void run() {}
+};
+
+atomic_uint DestructorCounter::counter;
+
 bool fixedThreadPool_execute() {
     try {
-        enum { RUNNER_COUNT = 7 };
+        enum { RUNNER_COUNT = 7, DESTRUCTOR_COUNT = 6 };
         TestThreadRunner runner;
         unique_ptr<executor_service> threadPool(executors::newFixedThreadPool(3));
         for (int i = 0; i < RUNNER_COUNT; ++i) {
@@ -17,6 +28,17 @@ bool fixedThreadPool_execute() {
         bool stat = runner.cv.wait_for(lck, chrono::minutes(1), [&runner] {return runner.count == RUNNER_COUNT; });
         if (!stat)
             throw exception("Wait for fixedThreadPool.execute failed");
+
+        for (int i = 0; i < DESTRUCTOR_COUNT; i++) {
+            threadPool->execute(new DestructorCounter(), true);
+        }
+        DestructorCounter dc;
+        threadPool->execute(&dc);
+        this_thread::sleep_for(chrono::milliseconds(500));
+        if (DestructorCounter::counter != DESTRUCTOR_COUNT) {
+            throw new exception("fixedThreadPool.execute: wrong number of DesctructorCounter were freed");
+        }
+
         cout << "fixedThreadPool.execute succeded" << endl;
         return true;
     } catch (exception& e) {

@@ -5,6 +5,7 @@
 #include "executor.h"
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 
 class TestThreadRunner : public zyzio::concurrent::runnable {
 public:
@@ -18,5 +19,6 @@ public:
         cv.notify_all();
     }
 };
+
 
 #endif

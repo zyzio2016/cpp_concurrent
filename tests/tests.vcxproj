@@ -20,8 +20,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\fixedThreadPool_execute.cpp" />
-    <ClCompile Include="src\fixedThreadPool_shutdown.cpp" />
+    <ClCompile Include="src\ThreadPool_shutdown.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\threadpool_submit.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ThreadPool\ThreadPool.vcxproj">
