@@ -20,7 +20,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\fixedThreadPool_execute.cpp" />
-    <ClCompile Include="src\threadpool_invoke.cpp" />
     <ClCompile Include="src\ThreadPool_shutdown.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\threadpool_submit.cpp" />
@@ -31,7 +30,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\TestException.h" />
     <ClInclude Include="src\TestThreadRunner.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
