@@ -1,4 +1,5 @@
 #include <iostream>
+#include"TestException.h"
 #include "executors.h"
 #include "TestThreadRunner.h"
 
@@ -25,16 +26,16 @@ bool ThreadPool_shutdown() {
             unique_lock<mutex> lck(runner.mtx);
             runner.cv.wait_for(lck, chrono::seconds(3));
             if (runner.count != 1)
-                throw exception("Wait for fixedThreadPool.shutdown failed");
+                throw TestException("Wait for fixedThreadPool.shutdown failed");
         }
         threadPool->shutdown();
         {
             unique_lock<mutex> lck(runner.mtx);
             bool stat = runner.cv.wait_for(lck, chrono::seconds(4), [&threadPool]() { return threadPool->isShutdown(); });
             if (!stat)
-                throw exception("Wait for fixedThreadPool.shutdown failed - still running");
+                throw TestException("Wait for fixedThreadPool.shutdown failed - still running");
             if (runner.count > 2) 
-                throw exception("Wait for fixedThreadPool.shutdown failed - to many runner were run");
+                throw TestException("Wait for fixedThreadPool.shutdown failed - to many runner were run");
             cout << "fixedThreadPool.shutdown succeded" << endl;
         }
         return true;
