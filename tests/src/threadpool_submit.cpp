@@ -26,35 +26,8 @@ bool ThreadPool_submit_lambda() {
     return false;
 }
 
-template<class T>
-class TestCallable : public callable<T> {
-public:
-    static atomic_uint counter;
-private:
-    T value;
-public:
-    TestCallable(T v) : value(v) {}
-    ~TestCallable() {
-        counter++;
-    }
-
-    T call() {
-        return value;
-    }
-};
-
 atomic_uint TestCallable<int>::counter;
 atomic_uint TestCallable<double>::counter;
-
-class TestRunnable : public runnable {
-public:
-    static atomic_uint counter;
-    void run() {}
-    ~TestRunnable() {
-        counter++;
-    }
-};
-
 atomic_uint TestRunnable::counter;
 
 bool ThreadPool_submit() {

@@ -40,7 +40,7 @@ namespace zyzio {
 
         void fixed_thread_pool::addToQueue(function<void()> f) {
             unique_lock<mutex> lock(queue_mutex);
-            tasks.push(f);
+            tasks.emplace(move(f));
             condition.notify_one();
         }
 

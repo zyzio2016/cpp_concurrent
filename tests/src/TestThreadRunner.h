@@ -20,5 +20,45 @@ public:
     }
 };
 
+template<class T>
+class TestThreadCallable : public zyzio::concurrent::callable<T> {
+public:
+    int count = 0;
+    std::mutex mtx;
+    std::condition_variable cv;
+
+    T call () {
+        std::unique_lock<std::mutex> lck(mtx);
+        count++;
+        cv.notify_all();
+        return count;
+    }
+};
+
+class TestRunnable : public zyzio::concurrent::runnable {
+public:
+    static std::atomic_uint counter;
+    void run() {}
+    ~TestRunnable() {
+        counter++;
+    }
+};
+
+template<class T>
+class TestCallable : public zyzio::concurrent::callable<T> {
+public:
+    static std::atomic_uint counter;
+private:
+    T value;
+public:
+    TestCallable(T v) : value(v) {}
+    ~TestCallable() {
+        counter++;
+    }
+
+    T call() {
+        return value;
+    }
+};
 
 #endif
