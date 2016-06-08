@@ -14,15 +14,11 @@ namespace zyzio {
         ///internal implementation
         class internal_executor_service {
         public:
-            struct task_wrapper {
-                runnable* task = nullptr;
-                bool deleteAfter = false;
-            };
-            
             virtual ~internal_executor_service() {}
             virtual void addToQueue(std::function<void()> f) = 0;
             virtual void shutdown() = 0;
             virtual bool isShutdown() = 0;
+            virtual bool isTerminated() = 0;
         };
 
         ///abstract executor service
@@ -97,8 +93,8 @@ namespace zyzio {
             template <class InputIterator>
             std::vector< std::future<void> > invokeAllRunnable(InputIterator task_begin, InputIterator task_end) {
                 std::vector< std::future<void> > futures;
-                std::for_each(task_begin, task_end, [&futures, this](auto t) { 
-                    futures.push_back(submitRunnable(std::move(t))); 
+                std::for_each(task_begin, task_end, [&futures, this](auto& t) { 
+                    futures.push_back(submitRunnable(t)); 
                 });
                 std::for_each(futures.begin(), futures.end(), [](std::future<void>& f) { f.wait(); });
                 return futures;
@@ -118,8 +114,8 @@ namespace zyzio {
             template <class InputIterator, class T>
             std::vector< std::future<T> > invokeAllCallable(InputIterator task_begin, InputIterator task_end) {
                 std::vector< std::future<T> > futures;
-                std::for_each(task_begin, task_end, [&futures, this](auto f) { 
-                    futures.push_back(submitCallable(std::move(f))); 
+                std::for_each(task_begin, task_end, [&futures, this](auto& f) { 
+                    futures.push_back(submitCallable(f)); 
                 });
                 std::for_each(futures.begin(), futures.end(), [](std::future<T>& f) { f.wait(); });
                 return futures;
@@ -148,8 +144,8 @@ namespace zyzio {
 
             ///Executes the given tasks, returning a list of Futures holding their status and results when all complete or the timeout expires, 
             ///whichever happens first.
-            template <class InputIterator, class Duration>
-            std::vector< std::future< void> > invokeAll(InputIterator task_begin, InputIterator task_end, const Duration& timeout_duration);
+            template <class InputIterator, class F, class T, class Duration>
+            std::vector< std::future< T> > invokeAll(InputIterator task_begin, InputIterator task_end, const Duration& timeout_duration);
 
             //Blocks until all tasks have completed execution after a shutdown request, or the timeout occurs, 
             //or the current thread is interrupted, whichever happens first.
@@ -162,7 +158,9 @@ namespace zyzio {
             }
 
             ///Returns true if all tasks have completed following shut down.
-            //bool isTerminated();
+            bool isTerminated() {
+                return impl->isTerminated();
+            }
 
             ///Initiates an orderly shutdown in which previously submitted tasks are executed, but no new tasks will be accepted.
             void shutdown() {
@@ -180,12 +178,13 @@ namespace zyzio {
             return task->get_future();
         }
 
+        template <class F>
         class wait_runner : public runnable {
         public:
             std::shared_ptr< std::condition_variable> wait;
             std::shared_ptr< std::mutex> waitMutex;
             std::shared_ptr< size_t> waitCounter;
-            std::function<void()> funct;
+            F funct;
 
             void run() {
                 funct();
@@ -206,17 +205,17 @@ namespace zyzio {
             }
         };
 
-        template <class InputIterator, class Duration>
-        std::vector< std::future< void> > executor_service::invokeAll(InputIterator task_begin, InputIterator task_end, 
+        template <class InputIterator, class F, class T, class Duration>
+        std::vector< std::future< T> > executor_service::invokeAll(InputIterator task_begin, InputIterator task_end, 
             const Duration& timeout_duration) {
 
-            std::vector< std::future< void> > futures;
+            std::vector< std::future< T> > futures;
             auto wait4all = std::shared_ptr< std::condition_variable>(new std::condition_variable());
             std::shared_ptr< std::mutex> waitMutex (new std::mutex());
             std::shared_ptr< size_t> waitCounter (new size_t(0));
             size_t taskCounter = 0;
-            std::for_each(task_begin, task_end, [=, &futures, &taskCounter](std::function<void()>f) {
-                wait_runner* r = new wait_runner();
+            std::for_each(task_begin, task_end, [=, &futures, &taskCounter](F& f) {
+                wait_runner<F>* r = new wait_runner<F>();
                 r->funct = std::move(f);
                 r->wait = wait4all;
                 r->waitCounter = waitCounter;

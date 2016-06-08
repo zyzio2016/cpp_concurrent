@@ -127,12 +127,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="cpp\executors.cpp" />
     <ClCompile Include="cpp\fixedthreadpool.cpp" />
-    <ClCompile Include="cpp\threadpool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cpp\fixedthreadpool.h" />

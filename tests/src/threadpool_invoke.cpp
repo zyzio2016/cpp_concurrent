@@ -87,7 +87,7 @@ bool ThreadPool_invoke() {
                 this_thread::sleep_for(chrono::milliseconds(2));
             });
         }
-        threadPool->invokeAll(list5.begin(), list5.end(), chrono::milliseconds (3));
+        threadPool->invokeAll<vector<AnyCall>::iterator, AnyCall, void, chrono::milliseconds>(list5.begin(), list5.end(), chrono::milliseconds (3));
         if (anyCounter > 2)
             throw TestException("ThreadPool_invoke (invokeAll timeout) failed.");
         this_thread::sleep_for(chrono::milliseconds(30));

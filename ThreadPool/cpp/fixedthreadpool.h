@@ -1,6 +1,7 @@
 #include <queue>
 #include <vector>
 #include <thread>
+#include <atomic>
 #include "../headers/threadpool.h"
 
 namespace zyzio {
@@ -20,6 +21,7 @@ namespace zyzio {
             std::mutex queue_mutex;
             volatile bool stop;
             std::condition_variable condition;
+            std::atomic_size_t workingThreads;
 
         public:
             fixed_thread_pool(size_t nThreads);
@@ -27,7 +29,9 @@ namespace zyzio {
             void addToQueue(std::function<void()>);
             void shutdown();
             bool isShutdown();
-
+            bool isTerminated() {
+                return workingThreads == 0;
+            }
         };
     }
 }

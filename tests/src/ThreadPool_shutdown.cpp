@@ -28,6 +28,9 @@ bool ThreadPool_shutdown() {
             if (runner.count != 1)
                 throw TestException("Wait for fixedThreadPool.shutdown failed");
         }
+        if (threadPool->isTerminated())
+            throw TestException("fixedThreadPool.isTerminated failed - already terminated");
+
         threadPool->shutdown();
         {
             unique_lock<mutex> lck(runner.mtx);
@@ -36,6 +39,8 @@ bool ThreadPool_shutdown() {
                 throw TestException("Wait for fixedThreadPool.shutdown failed - still running");
             if (runner.count > 2) 
                 throw TestException("Wait for fixedThreadPool.shutdown failed - to many runner were run");
+            if (threadPool->isTerminated())
+                throw TestException("fixedThreadPool.isTerminated failed - a pool isn't terminated");
             cout << "fixedThreadPool.shutdown succeded" << endl;
         }
         return true;

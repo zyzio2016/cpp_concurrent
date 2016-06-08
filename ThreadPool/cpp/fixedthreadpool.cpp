@@ -6,7 +6,7 @@ using namespace std;
 namespace zyzio {
     namespace concurrent {
 
-        fixed_thread_pool::fixed_thread_pool(size_t nThreads) : stop(false) {
+        fixed_thread_pool::fixed_thread_pool(size_t nThreads) : stop(false), workingThreads(nThreads) {
             for (size_t i = 0; i < nThreads; ++i)
                 workers.emplace_back([this] {
                 for (;;) {
@@ -17,7 +17,7 @@ namespace zyzio {
                             this->condition.wait(lock,
                                 [this] { return this->stop || !this->tasks.empty(); });
                             if (this->stop && this->tasks.empty())
-                                return;
+                                break;
                             task = move(this->tasks.front());
                             this->tasks.pop();
                         }
@@ -28,6 +28,7 @@ namespace zyzio {
                         cerr << "fixed_thread_pool worker exception" << endl;
                     }
                 }
+                --this->workingThreads;
             }
             );
         }
